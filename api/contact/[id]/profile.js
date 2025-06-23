@@ -6,12 +6,14 @@ module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // ✅ Handle CORS preflight
+  // ✅ Handle preflight
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  const { id: contactId } = req.query; // Get dynamic path param
+  // ✅ Correct way to get `id` from the path in Vercel dynamic API
+  const contactId = req.url.split("/")[3]; // because URL is like: /api/contact/{id}/profile
+
   const apiKey = process.env.HUBSPOT_API_KEY;
 
   if (!contactId) {
@@ -33,14 +35,12 @@ module.exports = async (req, res) => {
     const medicareExpiry = props["medicare_expiry_date"]?.value || "";
     const formSubmissions = response.data["form-submissions"] || [];
 
-    const result = {
+    res.status(200).json({
       contactId,
       recent_conversion_event_name: recentConversion,
       medicare_expiry_date: medicareExpiry,
       form_submissions: formSubmissions,
-    };
-
-    res.status(200).json(result);
+    });
   } catch (err) {
     console.error("❌ HubSpot API Error:", err?.response?.data || err.message);
     res.status(500).json({ error: "Failed to fetch contact profile" });
